@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unified Admin & Student API Testing</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f7fa;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+    }
+
+    h2 {
+        background-color: #4CAF50;
+        color: white;
+        padding: 20px 0;
+        margin: 0;
+    }
+
+    h3 {
+        color: #333;
+        margin-top: 40px;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        margin: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background-color: #45a049;
+    }
+
+    .section {
+        margin-bottom: 30px;
+    }
+
+    .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+</style>
+</head>
+<body>
+<h2>Unified Admin & Student API Testing</h2>
+
+<div class="container">
+    <div class="section">
+        <h3>Admin APIs</h3>
+        <div class="button-group">
+            <button onclick="openApi('registerAdmin')">Register Admin</button>
+            <button onclick="openApi('loginAdmin')">Login Admin</button>
+            <button onclick="openApi('getAdmins')">Get All Admins</button>
+            <button onclick="openApi('getAdmin')">Get Admin by ID</button>
+            <button onclick="openApi('updateAdmin')">Update Admin</button>
+            <button onclick="openApi('deleteAdmin')">Delete Admin</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Student APIs</h3>
+        <div class="button-group">
+            <button onclick="openApi('addStudent')">Add Student</button>
+            <button onclick="openApi('getAllStudents')">Get All Students</button>
+            <button onclick="openApi('getStudent')">Get Student by ID</button>
+            <button onclick="openApi('updateStudent')">Update Student</button>
+            <button onclick="openApi('deleteStudent')">Delete Student</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const BASE_ADMIN = "http://127.0.0.1:9000/api/admin.php";
+const BASE_STUDENT = "http://127.0.0.1:9000/api/student.php";
+let adminToken = "";
+let adminId = null;
+let studentId = null;
+
+async function openApi(action){
+    let url, method="GET", body=null;
+    switch(action){
+        case 'registerAdmin':
+            url = BASE_ADMIN + "?action=register";
+            method = "POST";
+            body = JSON.stringify({username:"admin_"+Date.now(), password:"123456"});
+            break;
+        case 'loginAdmin':
+            url = BASE_ADMIN + "?action=login";
+            method = "POST";
+            body = JSON.stringify({username:"admin1", password:"123456"});
+            break;
+        case 'getAdmins':
+            url = BASE_ADMIN;
+            break;
+        case 'getAdmin':
+            if(!adminId) return alert("Login or select an admin first!");
+            url = BASE_ADMIN + "?id="+adminId;
+            break;
+        case 'updateAdmin':
+            if(!adminId) return alert("Login or select an admin first!");
+            url = BASE_ADMIN + "?id="+adminId;
+            method = "PUT";
+            body = JSON.stringify({username:"admin_updated_"+Date.now(), password:"newpass"});
+            break;
+        case 'deleteAdmin':
+            if(!adminId) return alert("Login or select an admin first!");
+            url = BASE_ADMIN + "?id="+adminId;
+            method = "DELETE";
+            break;
+        case 'addStudent':
+            url = BASE_STUDENT;
+            method = "POST";
+            body = JSON.stringify({name:"John Doe", email:"john_"+Date.now()+"@example.com", age:22});
+            break;
+        case 'getAllStudents':
+            url = BASE_STUDENT;
+            break;
+        case 'getStudent':
+            if(!studentId) return alert("Add a student first!");
+            url = BASE_STUDENT + "?id="+studentId;
+            break;
+        case 'updateStudent':
+            if(!studentId) return alert("Add a student first!");
+            url = BASE_STUDENT + "?id="+studentId;
+            method = "PUT";
+            body = JSON.stringify({name:"John Updated", email:"john_upd_"+Date.now()+"@example.com", age:23});
+            break;
+        case 'deleteStudent':
+            if(!studentId) return alert("Add a student first!");
+            url = BASE_STUDENT + "?id="+studentId;
+            method = "DELETE";
+            break;
+    }
+
+    const headers = {"Content-Type":"application/json"};
+    if(adminToken) headers["Authorization"] = "Bearer "+adminToken;
+
+    const res = await fetch(url,{method, headers, body});
+    const data = await res.json();
+
+    // Save IDs dynamically
+    if(action==='loginAdmin' || action==='registerAdmin'){
+        adminToken = data.token;
+        // fetch adminId dynamically
+        const adminsRes = await fetch(BASE_ADMIN,{headers:{"Authorization":"Bearer "+adminToken}});
+        const admins = await adminsRes.json();
+        if(admins.length>0) adminId = admins[admins.length-1].id;
+    }
+    if(action==='addStudent'){
+        studentId = data.id;
+    }
+
+    // Open result in new tab
+    const resultWindow = window.open();
+    resultWindow.document.write("<pre>"+JSON.stringify(data,null,2)+"</pre>");
+    resultWindow.document.title = action + " Result";
+}
+</script>
+</body>
+</html>
